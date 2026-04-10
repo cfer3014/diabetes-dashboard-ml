@@ -6,3 +6,13 @@ scikit-learn
 matplotlib
 fpdf
 openpyxl
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-jose
+passlib
+scikit-learn
+numpy
+pandas
+joblib
