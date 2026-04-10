@@ -16,3 +16,13 @@ scikit-learn
 numpy
 pandas
 joblib
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-jose
+passlib
+scikit-learn
+numpy
+pandas
+joblib
