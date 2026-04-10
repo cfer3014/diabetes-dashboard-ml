@@ -24,6 +24,50 @@ import os
 
 st.set_page_config(page_title="Dashboard Diabetes Interactivo 🏥", layout="wide")
 
+st.markdown("""
+<h1 style='text-align: center; font-size:25px; color: #00BFA6;'>
+🏥 Predicción Inteligente de Diabetes
+</h1>
+<p style='text-align: center; font-size:18px;'>
+Predicción • Segmentación • Análisis en tiempo real
+</p>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+
+/* Subheaders estilo premium */
+h2 {
+    font-size: 18px !important;
+    font-weight: 600;
+    color: #E5E7EB;
+    
+    padding-left: 10px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+.kpi {
+    background-color: #1f2937;
+    padding: 10px;              /* antes 20px */
+    border-radius: 8px;
+    text-align: center;
+    color: white;
+    border-left: 4px solid #00BFA6;
+}
+
+.kpi h2 {
+    font-size: 22px;            /* antes grande */
+    margin: 0;
+}
+
+.kpi h3 {
+    font-size: 14px;
+    margin: 0;
+    color: #9CA3AF;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ==============================
 # 1. CARGAR DATOS
 # ==============================
@@ -58,7 +102,7 @@ for name, m in models.items():
     acc = round((pred == y_test).mean(), 4)
     results[name] = acc
 
-results_df = pd.DataFrame(list(results.items()), columns=["Modelo", "Accuracy"])
+results_df = pd.DataFrame(list(results.items()), columns=["Modelo", "Precision"])
 
 # Guardar modelo Random Forest y scaler para predicción TOP
 rf_model = RandomForestClassifier(n_estimators=200, max_depth=6, random_state=42)
@@ -104,6 +148,51 @@ df_filtered = df_dynamic[
     (df_dynamic['Cluster'].isin(cluster_filter))
 ]
 
+
+st.header("📊 Indicadores Clave")
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.markdown(f"""
+<div class="kpi">
+<h3>Pacientes</h3>
+<h2>{len(df_filtered)}</h2>
+</div>
+""", unsafe_allow_html=True)
+
+col2.markdown(f"""
+<div class="kpi">
+<h3>Riesgo Promedio</h3>
+<h2>{df_filtered['Outcome'].mean()*100:.1f}%</h2>
+</div>
+""", unsafe_allow_html=True)
+
+col3.markdown(f"""
+<div class="kpi">
+<h3>Glucosa Promedio</h3>
+<h2>{df_filtered['Glucose'].mean():.1f}</h2>
+</div>
+""", unsafe_allow_html=True)
+
+col4.markdown(f"""
+<div class="kpi">
+<h3>Clusters</h3>
+<h2>{df_filtered['Cluster'].nunique()}</h2>
+</div>
+""", unsafe_allow_html=True)
+
+st.header("🧠 Insight automático")
+
+riesgo = df_filtered['Outcome'].mean()
+
+if riesgo > 0.6:
+         st.error("⚠️ Alto riesgo general en la población analizada")
+elif riesgo > 0.3:
+          st.warning("⚠️ Riesgo moderado detectado en la población analizada")
+else:
+          st.success("✅ Bajo riesgo general en la población")
+
+
 # ==============================
 # 4. DASHBOARD TABS
 # ==============================
@@ -144,7 +233,7 @@ with tabs[2]:
 with tabs[3]:
     st.header("Comparación de modelos")
     st.dataframe(results_df)
-    fig = px.bar(results_df, x="Modelo", y="Accuracy", text="Accuracy", color="Accuracy",
+    fig = px.bar(results_df, x="Modelo", y="Precision", text="Precision", color="Precision",
                  color_continuous_scale="Viridis", range_y=[0.6,1])
     st.plotly_chart(fig, use_container_width=True)
 
@@ -155,11 +244,11 @@ with tabs[4]:
                     labels=dict(x="Predicho", y="Real"))
     st.plotly_chart(fig, use_container_width=True)
 
-    st.header("Curva ROC")
+    st.header("Curva ROC - (Receiver Operating Characteristic)")
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name=f'AUC={roc_auc:.2f}', line=dict(color='darkorange', width=3)))
     fig.add_trace(go.Scatter(x=[0,1], y=[0,1], mode='lines', line=dict(dash='dash', color='gray')))
-    fig.update_layout(xaxis_title="False Positive Rate", yaxis_title="True Positive Rate", title="Curva ROC")
+    fig.update_layout(xaxis_title="False Positive Rate", yaxis_title="True Positive Rate",title="")
     st.plotly_chart(fig, use_container_width=True)
 
     st.header("Importancia de variables")
@@ -187,119 +276,290 @@ with tabs[6]:
     bmi = st.sidebar.slider("IMC (BMI)", 0.0, 70.0, 25.0)
     dpf = st.sidebar.slider("Diabetes Pedigree Function", 0.0, 3.0, 0.5)
     age = st.sidebar.slider("Edad", 10, 100, 40)
-
+    
+    
     # Escalar datos nuevo paciente
     new_patient_scaled = scaler.transform([[preg, gluc, bp, skin, ins, bmi, dpf, age]])
     pred_prob = rf_model.predict_proba(new_patient_scaled)[0][1]
     pred_label = int(pred_prob > 0.5)
     cluster_pred = kmeans.predict(new_patient_scaled)[0]
 
-    st.header("Predicción en tiempo real para nuevo paciente")
-    st.write(f"✅ Probabilidad de diabetes: **{pred_prob*100:.1f}%**")
+
+
+    st.header("🧾 Predicción en tiempo real para nuevo paciente")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Probabilidad", f"{pred_prob*100:.1f}%")
+    col2.metric("Cluster", cluster_pred)
+    col3.metric("Riesgo", "Alto" if pred_label==1 else "Bajo")
+
     if pred_label == 1:
-        st.error("⚠️ Alto riesgo de diabetes")
+        st.error("⚠️ El paciente presenta ALTO riesgo de diabetes")
     else:
-        st.success("✅ Bajo riesgo de diabetes")
-    st.write(f"Cluster asignado: **{cluster_pred}**")
+        st.success("✅ El paciente presenta BAJO riesgo de diabetes")
+      
 
-    # Historial
-    if "historial_predicciones" not in st.session_state:
-        st.session_state.historial_predicciones = pd.DataFrame(columns=[
-            "Edad", "IMC", "Glucosa", "Presion", "Outcome Predicho",
-            "Probabilidad", "Cluster"
-        ])
+    #st.header("Predicción en tiempo real para nuevo paciente")
+    # st.write(f"✅ Probabilidad de diabetes: **{pred_prob*100:.1f}%**")
+    # if pred_label == 1:
+    #      st.error("⚠️ Alto riesgo de diabetes")
+    # else:
+    #      st.success("✅ Bajo riesgo de diabetes")
+    # st.write(f"Cluster asignado: **{cluster_pred}**")
+    
 
-    nueva_pred = {
-        "Edad": age,
-        "IMC": bmi,
-        "Glucosa": gluc,
-        "Presion": bp,
-        "Outcome Predicho": "Alto riesgo" if pred_label==1 else "Bajo riesgo",
-        "Probabilidad": round(pred_prob*100,1),
-        "Cluster": cluster_pred
-    }
 
+# ==============================
+# PREDICCIÓN ACTUAL (SIEMPRE EXISTE)
+# ==============================
+
+current_prediction = {
+    "Edad": age,
+    "IMC": bmi,
+    "Glucosa": gluc,
+    "Presion": bp,
+    "Outcome Predicho": "Alto riesgo" if pred_label == 1 else "Bajo riesgo",
+    "Probabilidad": round(pred_prob * 100, 1),
+    "Cluster": cluster_pred
+}
+
+# ==============================
+# HISTORIAL SEGURO (SIN DUPLICADOS)
+# ==============================
+if "historial_predicciones" not in st.session_state:
+    st.session_state.historial_predicciones = pd.DataFrame(columns=current_prediction.keys())
+
+if "last_pred_id" not in st.session_state:
+    st.session_state.last_pred_id = None
+
+pred_id = f"{age}_{bmi}_{gluc}_{bp}_{pred_label}_{round(pred_prob,2)}"
+
+if st.session_state.last_pred_id != pred_id:
     st.session_state.historial_predicciones = pd.concat([
-        st.session_state.historial_predicciones, 
-        pd.DataFrame([nueva_pred])
+        st.session_state.historial_predicciones,
+        pd.DataFrame([current_prediction])
     ], ignore_index=True)
 
-    st.subheader("📊 Historial de predicciones")
-    st.dataframe(st.session_state.historial_predicciones)
+    st.session_state.last_pred_id = pred_id
 
-    # Gráfico comparativo
-    st.subheader("Comparación con pacientes existentes")
-    df_plot = df_filtered.copy()
-    df_plot['NuevoPaciente'] = 0
+# ==============================
+# MOSTRAR HISTORIAL
+# ==============================
+st.header("📊 Historial de predicciones")
+st.dataframe(st.session_state.historial_predicciones)
+
+# ==============================
+# GRÁFICO COMPARATIVO
+# ==============================
+# ==============================
+# 📈 GRÁFICO CLÍNICO PROFESIONAL
+# ==============================
+
+st.header("📈 Paciente vs Dataset")
+
+# 🎯 Selector
+modo_vista = st.radio(
+    "Modo de visualización",
+    ["Actual", "Histórico"],
+    horizontal=True
+)
+
+# ==============================
+# 📊 DATASET BASE (TENUE)
+# ==============================
+df_base = df_filtered.copy().reset_index(drop=True)
+df_base["Cluster"] = df_base["Cluster"].astype(str)
+
+fig = px.scatter(
+    df_base,
+    x="Glucose",
+    y="BMI",
+    color="Cluster",
+    opacity=0.35,  # 🔥 dataset en fondo
+    color_discrete_sequence=px.colors.qualitative.Set2
+)
+
+# ==============================
+# 🧠 HISTORIAL (SEPARADO)
+# ==============================
+if "historial_grafico" not in st.session_state:
+    st.session_state.historial_grafico = pd.DataFrame(columns=["Glucose","BMI","Age","Cluster"])
+
+if "last_graph_id" not in st.session_state:
+    st.session_state.last_graph_id = None
+
+graph_id = f"{age}_{bmi}_{gluc}_{bp}_{pred_label}"
+
+# guardar sin duplicar
+if st.session_state.last_graph_id != graph_id:
     new_patient = pd.DataFrame([{
-        'Pregnancies': preg,
-        'Glucose': gluc,
-        'BloodPressure': bp,
-        'SkinThickness': skin,
-        'Insulin': ins,
-        'BMI': bmi,
-        'DiabetesPedigreeFunction': dpf,
-        'Age': age,
-        'Outcome': pred_label,
-        'Cluster': cluster_pred,
-        'NuevoPaciente': 1
+        "Glucose": gluc,
+        "BMI": bmi,
+        "Age": age,
+        "Cluster": str(cluster_pred)
     }])
-    df_plot = pd.concat([df_plot, new_patient], ignore_index=True)
-    fig = px.scatter(df_plot, x='Glucose', y='BMI', color='Cluster', 
-                     symbol='NuevoPaciente', size='NuevoPaciente',
-                     labels={'NuevoPaciente':'Paciente nuevo'},
-                     hover_data=['Age','Pregnancies','Outcome'])
-    fig.update_traces(marker=dict(size=12, line=dict(width=2, color='DarkSlateGrey')))
-    st.plotly_chart(fig, use_container_width=True)
 
-    # Exportación PDF y Excel
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📄 Generar PDF"):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(0, 10, "Reporte de Predicción de Diabetes", ln=True, align="C")
-            pdf.ln(10)
-            pdf.set_font("Arial", "", 12)
-            for key, val in nueva_pred.items():
-                pdf.cell(0, 8, f"{key}: {val}", ln=True)
-            pdf.ln(5)
-            plt.figure(figsize=(6,4))
-            for cluster_id in sorted(df_plot['Cluster'].unique()):
-                sub_df = df_plot[df_plot['Cluster'] == cluster_id]
-                plt.scatter(sub_df['Glucose'], sub_df['BMI'],
-                            s=sub_df['NuevoPaciente'].replace({0:40, 1:80}),
-                            label=f"Cluster {cluster_id}")
-            plt.xlabel("Glucosa")
-            plt.ylabel("BMI")
-            plt.title("Paciente vs Historial / Dataset")
-            plt.legend()
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-                plt.savefig(tmpfile.name, format="PNG")
-                tmpfile_path = tmpfile.name
-            plt.close()
-            pdf.image(tmpfile_path, x=10, y=None, w=180)
-            os.remove(tmpfile_path)
-            pdf_bytes = pdf.output(dest='S').encode('latin1')
-            st.download_button("💾 Descargar PDF", pdf_bytes, "reporte_diabetes.pdf", "application/pdf")
+    st.session_state.historial_grafico = pd.concat(
+        [st.session_state.historial_grafico, new_patient],
+        ignore_index=True
+    )
 
+    st.session_state.last_graph_id = graph_id
+
+# mostrar histórico SOLO si se selecciona
+if modo_vista == "Histórico" and not st.session_state.historial_grafico.empty:
+    fig.add_trace(
+        go.Scatter(
+            x=st.session_state.historial_grafico["Glucose"],
+            y=st.session_state.historial_grafico["BMI"],
+            mode="markers",
+            marker=dict(
+                size=9,
+                color="yellow",
+                opacity=0.9
+            ),
+            name="Pacientes ingresados"
+        )
+    )
+
+# ==============================
+# ⭐ PACIENTE ACTUAL
+# ==============================
+fig.add_trace(
+    go.Scatter(
+        x=[gluc],
+        y=[bmi],
+        mode="markers",
+        marker=dict(
+            size=24,
+            color="red",
+            symbol="star",
+            line=dict(width=2, color="white")
+        ),
+        name="Paciente actual"
+    )
+)
+
+# ==============================
+# 🎨 LAYOUT PRO
+# ==============================
+fig.update_layout(
+    height=550,
+    template="plotly_dark",
+    title="Distribución clínica de pacientes",
+
+    legend=dict(
+        orientation="h",
+        y=1.02,
+        x=0.5,
+        xanchor="center"
+    ),
+
+    margin=dict(l=20, r=20, t=50, b=20),
+
+    xaxis=dict(
+        title="Glucosa (mg/dL)",
+        gridcolor="rgba(255,255,255,0.05)"
+    ),
+
+    yaxis=dict(
+        title="IMC (BMI)",
+        gridcolor="rgba(255,255,255,0.05)"
+    )
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# ==============================
+# EXPORTACIÓN PDF + EXCEL
+# ==============================
+import io
+from fpdf import FPDF
+import tempfile
+import os
+
+col1, col2 = st.columns(2)
+
+# ---------------- PDF ----------------
+with col1:
+    if st.button("📄 Generar PDF"):
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", "B", 16)
+        pdf.cell(0, 10, "Reporte de Diabetes", ln=True, align="C")
+        pdf.ln(10)
+
+        pdf.set_font("Arial", "", 12)
+
+        for k, v in current_prediction.items():
+            pdf.cell(0, 8, f"{k}: {v}", ln=True)
+
+        pdf.ln(5)
+
+        # gráfico
+        plt.figure(figsize=(6,4))
+        for c in sorted(df_plot["Cluster"].unique()):
+            sub = df_plot[df_plot["Cluster"] == c]
+            plt.scatter(sub["Glucose"], sub["BMI"], label=f"Cluster {c}")
+
+        plt.xlabel("Glucosa")
+        plt.ylabel("BMI")
+        plt.legend()
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            plt.savefig(tmp.name)
+            tmp_path = tmp.name
+
+        plt.close()
+
+        pdf.image(tmp_path, x=10, w=180)
+        os.remove(tmp_path)
+
+        pdf_bytes = pdf.output(dest="S").encode("latin1")
+
+        st.download_button(
+            "⬇️ Descargar PDF",
+            data=pdf_bytes,
+            file_name="reporte_diabetes.pdf",
+            mime="application/pdf"
+        )
+
+# ---------------- EXCEL ----------------
 with col2:
     if st.button("📊 Exportar Excel"):
+
         output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # Hoja 1: Pacientes filtrados
-            df_filtered.to_excel(writer, index=False, sheet_name="Pacientes Filtrados")
-            # Hoja 2: Nuevo paciente
-            pd.DataFrame([nueva_pred]).to_excel(writer, index=False, sheet_name="Nuevo Paciente")
-            # Hoja 3: Resumen por Cluster
-            cluster_summary.to_excel(writer, sheet_name="Resumen por Cluster")
-            # Hoja 4: Historial de predicciones
-            st.session_state.historial_predicciones.to_excel(writer, index=False, sheet_name="Historial")
+
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+
+            # 1. pacientes filtrados
+            df_filtered.to_excel(writer, sheet_name="Pacientes", index=False)
+
+            # 2. paciente actual
+            pd.DataFrame([current_prediction]).to_excel(
+                writer,
+                sheet_name="Nuevo Paciente",
+                index=False
+            )
+
+            # 3. historial
+            st.session_state.historial_predicciones.to_excel(
+                writer,
+                sheet_name="Historial",
+                index=False
+            )
+
+            # 4. resumen clusters
+            cluster_summary.to_excel(writer, sheet_name="Clusters")
+
         output.seek(0)
+
         st.download_button(
-            "💾 Descargar Excel", 
-            output, 
-            "dashboard_diabetes.xlsx", 
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            "⬇️ Descargar Excel",
+            data=output,
+            file_name="dashboard_diabetes.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        
