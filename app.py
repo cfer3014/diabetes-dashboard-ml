@@ -497,13 +497,47 @@ with tabs[6]:
             pdf.ln(5)
 
             # gráfico
+            # plt.figure(figsize=(6,4))
+            # for c in sorted(df_plot["Cluster"].unique()):
+            #     sub = df_plot[df_plot["Cluster"] == c]
+            #     plt.scatter(sub["Glucose"], sub["BMI"], label=f"Cluster {c}")
+
+            # plt.xlabel("Glucosa")
+            # plt.ylabel("BMI")
+            # plt.legend()
             plt.figure(figsize=(6,4))
-            for c in sorted(df_plot["Cluster"].unique()):
-                sub = df_plot[df_plot["Cluster"] == c]
-                plt.scatter(sub["Glucose"], sub["BMI"], label=f"Cluster {c}")
+
+            # Dataset base
+            for c in sorted(df_base["Cluster"].unique()):
+                sub = df_base[df_base["Cluster"] == c]
+                plt.scatter(
+                    sub["Glucose"],
+                    sub["BMI"],
+                    alpha=0.3,
+                    label=f"Cluster {c}"
+                )
+
+            # Histórico (si existe)
+            if "historial_grafico" in st.session_state and not st.session_state.historial_grafico.empty:
+                plt.scatter(
+                    st.session_state.historial_grafico["Glucose"],
+                    st.session_state.historial_grafico["BMI"],
+                    color="yellow",
+                    label="Histórico"
+                )
+
+            # Paciente actual
+            plt.scatter(
+                gluc,
+                bmi,
+                color="red",
+                s=120,
+                label="Paciente actual"
+            )
 
             plt.xlabel("Glucosa")
             plt.ylabel("BMI")
+            plt.title("Paciente vs Dataset")
             plt.legend()
 
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
@@ -560,4 +594,4 @@ with tabs[6]:
                 file_name="dashboard_diabetes.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            
+              
