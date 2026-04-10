@@ -600,201 +600,460 @@
 # app.py - Dashboard Diabetes Interactivo (Refactor PRO)
 # ==============================
 
+
+
+
+# import streamlit as st
+# import pandas as pd
+# import numpy as np
+# import plotly.express as px
+# import plotly.graph_objects as go
+# import matplotlib.pyplot as plt
+# import io
+# from fpdf import FPDF
+# import tempfile
+# import os
+
+# # 🔥 NUEVA ARQUITECTURA
+# from ml.training import load_and_train
+# from ml.prediction import predict_patient
+# from ml.clustering import build_clusters
+# from state.history import update_history
+
+# # ==============================
+# # CONFIG
+# # ==============================
+
+
+
+# st.set_page_config(page_title="Dashboard Diabetes Interactivo 🏥", layout="wide")
+
+# # ==============================
+# # HEADER
+# # ==============================
+# st.markdown("""
+# <h1 style='text-align: center; font-size:25px; color: #00BFA6;'>
+# 🏥 Predicción Inteligente de Diabetes
+# </h1>
+# <p style='text-align: center; font-size:18px;'>
+# Predicción • Segmentación • Análisis en tiempo real
+# </p>
+# """, unsafe_allow_html=True)
+
+# # ==============================
+# # ESTILOS
+# # ==============================
+# st.markdown("""
+# <style>
+# h2 {
+#     font-size: 18px !important;
+#     font-weight: 600;
+#     color: #E5E7EB;
+#     padding-left: 10px;
+# }
+# .kpi {
+#     background-color: #1f2937;
+#     padding: 10px;
+#     border-radius: 8px;
+#     text-align: center;
+#     color: white;
+#     border-left: 4px solid #00BFA6;
+# }
+# .kpi h2 { font-size: 22px; margin: 0; }
+# .kpi h3 { font-size: 14px; margin: 0; color: #9CA3AF; }
+# </style>
+# """, unsafe_allow_html=True)
+
+# # ==============================
+# # 🔥 CARGA + ENTRENAMIENTO (MODULAR)
+# # ==============================
+# df_orig, X_scaled, y, scaler, rf_model, results = load_and_train()
+
+# # ==============================
+# # 🔥 CLUSTERING
+# # ==============================
+# kmeans, pca, X_pca, df_orig = build_clusters(X_scaled, df_orig)
+
+# cluster_summary = df_orig.groupby('Cluster').mean()
+
+# # ==============================
+# # SIDEBAR FILTROS
+# # ==============================
+# st.sidebar.header("Filtros de pacientes")
+
+# df_dynamic = df_orig.copy()
+
+# age_filter = st.sidebar.slider("Edad", int(df_dynamic['Age'].min()), int(df_dynamic['Age'].max()), 
+#                                (int(df_dynamic['Age'].min()), int(df_dynamic['Age'].max())))
+
+# bmi_filter = st.sidebar.slider("IMC (BMI)", float(df_dynamic['BMI'].min()), float(df_dynamic['BMI'].max()), 
+#                                (float(df_dynamic['BMI'].min()), float(df_dynamic['BMI'].max())))
+
+# glucose_filter = st.sidebar.slider("Glucosa", int(df_dynamic['Glucose'].min()), int(df_dynamic['Glucose'].max()), 
+#                                    (int(df_dynamic['Glucose'].min()), int(df_dynamic['Glucose'].max())))
+
+# cluster_filter = st.sidebar.multiselect("Cluster", options=sorted(df_dynamic['Cluster'].unique()), 
+#                                         default=sorted(df_dynamic['Cluster'].unique()))
+
+# df_filtered = df_dynamic[
+#     (df_dynamic['Age'] >= age_filter[0]) & (df_dynamic['Age'] <= age_filter[1]) &
+#     (df_dynamic['BMI'] >= bmi_filter[0]) & (df_dynamic['BMI'] <= bmi_filter[1]) &
+#     (df_dynamic['Glucose'] >= glucose_filter[0]) & (df_dynamic['Glucose'] <= glucose_filter[1]) &
+#     (df_dynamic['Cluster'].isin(cluster_filter))
+# ]
+
+# # ==============================
+# # KPIs
+# # ==============================
+# st.header("📊 Indicadores Clave")
+
+# col1, col2, col3, col4 = st.columns(4)
+
+# col1.markdown(f"<div class='kpi'><h3>Pacientes</h3><h2>{len(df_filtered)}</h2></div>", unsafe_allow_html=True)
+# col2.markdown(f"<div class='kpi'><h3>Riesgo Promedio</h3><h2>{df_filtered['Outcome'].mean()*100:.1f}%</h2></div>", unsafe_allow_html=True)
+# col3.markdown(f"<div class='kpi'><h3>Glucosa Promedio</h3><h2>{df_filtered['Glucose'].mean():.1f}</h2></div>", unsafe_allow_html=True)
+# col4.markdown(f"<div class='kpi'><h3>Clusters</h3><h2>{df_filtered['Cluster'].nunique()}</h2></div>", unsafe_allow_html=True)
+
+# # ==============================
+# # INSIGHT
+# # ==============================
+# st.header("🧠 Insight automático")
+
+# riesgo = df_filtered['Outcome'].mean()
+
+# if riesgo > 0.6:
+#     st.error("⚠️ Alto riesgo general en la población analizada")
+# elif riesgo > 0.3:
+#     st.warning("⚠️ Riesgo moderado detectado")
+# else:
+#     st.success("✅ Bajo riesgo general")
+
+# # ==============================
+# # TABS
+# # ==============================
+# tabs = st.tabs(["Datos & EDA", "Distribución", "Correlación",
+#                 "Modelos", "Random Forest", "Clustering", "Predicción"])
+
+# # ---------------- TAB 1 ----------------
+# with tabs[0]:
+#     st.dataframe(df_filtered)
+#     st.write(df_filtered.describe())
+
+# # ---------------- TAB 2 ----------------
+# with tabs[1]:
+#     fig = px.histogram(df_filtered, x='Outcome', color='Outcome')
+#     st.plotly_chart(fig, use_container_width=True)
+
+# # ---------------- TAB 3 ----------------
+# with tabs[2]:
+#     corr = df_filtered.corr()
+#     fig = px.imshow(corr, text_auto=True)
+#     st.plotly_chart(fig, use_container_width=True)
+
+# # ---------------- TAB 4 ----------------
+# with tabs[3]:
+#     results_df = pd.DataFrame(list(results.items()), columns=["Modelo", "Precision"])
+#     st.dataframe(results_df)
+
+# # ---------------- TAB 5 ----------------
+# with tabs[4]:
+#     importances = pd.Series(rf_model.feature_importances_, index=df_orig.drop("Outcome", axis=1).columns)
+#     fig = px.bar(importances)
+#     st.plotly_chart(fig)
+
+# # ---------------- TAB 6 ----------------
+# with tabs[5]:
+#     fig = px.scatter(x=X_pca[:,0], y=X_pca[:,1], color=df_orig['Cluster'].astype(str))
+#     st.plotly_chart(fig)
+
+# # ---------------- TAB 7 ----------------
+# with tabs[6]:
+
+#     preg = st.sidebar.slider("Embarazos", 0, 20, 1)
+#     gluc = st.sidebar.slider("Glucosa", 0, 200, 120)
+#     bp = st.sidebar.slider("Presión", 0, 140, 70)
+#     skin = st.sidebar.slider("Piel", 0, 100, 20)
+#     ins = st.sidebar.slider("Insulina", 0, 900, 80)
+#     bmi = st.sidebar.slider("BMI", 0.0, 70.0, 25.0)
+#     dpf = st.sidebar.slider("DPF", 0.0, 3.0, 0.5)
+#     age = st.sidebar.slider("Edad", 10, 100, 40)
+
+#     pred_label, pred_prob = predict_patient(
+#         [preg, gluc, bp, skin, ins, bmi, dpf, age],
+#         scaler,
+#         rf_model
+#     )
+
+#     cluster_pred = kmeans.predict(scaler.transform([[preg, gluc, bp, skin, ins, bmi, dpf, age]]))[0]
+
+#     st.metric("Probabilidad", f"{pred_prob*100:.1f}%")
+#     st.metric("Cluster", cluster_pred)
+#     st.metric("Riesgo", "Alto" if pred_label else "Bajo")
+
+#     # HISTORIAL
+#     prediction = {
+#         "Edad": age,
+#         "IMC": bmi,
+#         "Glucosa": gluc,
+#         "Outcome": "Alto" if pred_label else "Bajo",
+#         "Probabilidad": round(pred_prob * 100, 1)
+#     }
+
+#     pred_id = f"{age}_{bmi}_{gluc}_{pred_label}"
+
+#     update_history(st.session_state, prediction, pred_id)
+
+#     st.dataframe(st.session_state.historial_predicciones)              
+
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-import io
-from fpdf import FPDF
-import tempfile
-import os
-
-# 🔥 NUEVA ARQUITECTURA
-from ml.training import load_and_train
-from ml.prediction import predict_patient
-from ml.clustering import build_clusters
-from state.history import update_history
+import joblib
 
 # ==============================
 # CONFIG
 # ==============================
-st.set_page_config(page_title="Dashboard Diabetes Interactivo 🏥", layout="wide")
+st.set_page_config(
+    page_title="Dashboard Diabetes Interactivo 🏥",
+    layout="wide"
+)
 
 # ==============================
-# HEADER
+# CARGA MODELO (CACHE PARA PERFORMANCE)
+# ==============================
+@st.cache_resource
+def load_assets():
+    model = joblib.load("ml/artifacts/model.pkl")
+    scaler = joblib.load("ml/artifacts/scaler.pkl")
+    return model, scaler
+
+rf_model, scaler = load_assets()
+
+# ==============================
+# DATASET (PUEDES CAMBIAR A API EN FUTURO)
+# ==============================
+df_orig = pd.read_csv(
+    "https://raw.githubusercontent.com/plotly/datasets/master/diabetes.csv"
+)
+
+# limpieza simple
+cols = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+df_orig[cols] = df_orig[cols].replace(0, np.nan)
+df_orig[cols] = df_orig[cols].fillna(df_orig[cols].median())
+
+X = df_orig.drop("Outcome", axis=1)
+y = df_orig["Outcome"]
+
+# ==============================
+# CLUSTERING (CACHE)
+# ==============================
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+
+@st.cache_resource
+def build_clusters(X_scaled, df):
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+    clusters = kmeans.fit_predict(X_scaled)
+    df = df.copy()
+    df["Cluster"] = clusters
+
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X_scaled)
+
+    return kmeans, pca, X_pca, df
+
+# ==============================
+# ESCALADO
+# ==============================
+from sklearn.preprocessing import StandardScaler
+
+scaler_local = StandardScaler()
+X_scaled = scaler_local.fit_transform(X)
+
+kmeans, pca, X_pca, df_orig = build_clusters(X_scaled, df_orig)
+
+# ==============================
+# UI HEADER
 # ==============================
 st.markdown("""
-<h1 style='text-align: center; font-size:25px; color: #00BFA6;'>
+<h1 style='text-align: center; color: #00BFA6;'>
 🏥 Predicción Inteligente de Diabetes
 </h1>
 <p style='text-align: center; font-size:18px;'>
-Predicción • Segmentación • Análisis en tiempo real
+ML • Clustering • Analítica Clínica
 </p>
 """, unsafe_allow_html=True)
 
 # ==============================
-# ESTILOS
-# ==============================
-st.markdown("""
-<style>
-h2 {
-    font-size: 18px !important;
-    font-weight: 600;
-    color: #E5E7EB;
-    padding-left: 10px;
-}
-.kpi {
-    background-color: #1f2937;
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-    color: white;
-    border-left: 4px solid #00BFA6;
-}
-.kpi h2 { font-size: 22px; margin: 0; }
-.kpi h3 { font-size: 14px; margin: 0; color: #9CA3AF; }
-</style>
-""", unsafe_allow_html=True)
-
-# ==============================
-# 🔥 CARGA + ENTRENAMIENTO (MODULAR)
-# ==============================
-df_orig, X_scaled, y, scaler, rf_model, results = load_and_train()
-
-# ==============================
-# 🔥 CLUSTERING
-# ==============================
-kmeans, pca, X_pca, df_orig = build_clusters(X_scaled, df_orig)
-
-cluster_summary = df_orig.groupby('Cluster').mean()
-
-# ==============================
 # SIDEBAR FILTROS
 # ==============================
-st.sidebar.header("Filtros de pacientes")
+st.sidebar.header("Filtros")
 
-df_dynamic = df_orig.copy()
+age_filter = st.sidebar.slider(
+    "Edad",
+    int(df_orig["Age"].min()),
+    int(df_orig["Age"].max()),
+    (20, 60)
+)
 
-age_filter = st.sidebar.slider("Edad", int(df_dynamic['Age'].min()), int(df_dynamic['Age'].max()), 
-                               (int(df_dynamic['Age'].min()), int(df_dynamic['Age'].max())))
+bmi_filter = st.sidebar.slider(
+    "BMI",
+    float(df_orig["BMI"].min()),
+    float(df_orig["BMI"].max()),
+    (20.0, 40.0)
+)
 
-bmi_filter = st.sidebar.slider("IMC (BMI)", float(df_dynamic['BMI'].min()), float(df_dynamic['BMI'].max()), 
-                               (float(df_dynamic['BMI'].min()), float(df_dynamic['BMI'].max())))
+glucose_filter = st.sidebar.slider(
+    "Glucosa",
+    int(df_orig["Glucose"].min()),
+    int(df_orig["Glucose"].max()),
+    (80, 180)
+)
 
-glucose_filter = st.sidebar.slider("Glucosa", int(df_dynamic['Glucose'].min()), int(df_dynamic['Glucose'].max()), 
-                                   (int(df_dynamic['Glucose'].min()), int(df_dynamic['Glucose'].max())))
+cluster_filter = st.sidebar.multiselect(
+    "Cluster",
+    options=sorted(df_orig["Cluster"].unique()),
+    default=sorted(df_orig["Cluster"].unique())
+)
 
-cluster_filter = st.sidebar.multiselect("Cluster", options=sorted(df_dynamic['Cluster'].unique()), 
-                                        default=sorted(df_dynamic['Cluster'].unique()))
-
-df_filtered = df_dynamic[
-    (df_dynamic['Age'] >= age_filter[0]) & (df_dynamic['Age'] <= age_filter[1]) &
-    (df_dynamic['BMI'] >= bmi_filter[0]) & (df_dynamic['BMI'] <= bmi_filter[1]) &
-    (df_dynamic['Glucose'] >= glucose_filter[0]) & (df_dynamic['Glucose'] <= glucose_filter[1]) &
-    (df_dynamic['Cluster'].isin(cluster_filter))
+df_filtered = df_orig[
+    (df_orig["Age"].between(age_filter[0], age_filter[1])) &
+    (df_orig["BMI"].between(bmi_filter[0], bmi_filter[1])) &
+    (df_orig["Glucose"].between(glucose_filter[0], glucose_filter[1])) &
+    (df_orig["Cluster"].isin(cluster_filter))
 ]
 
 # ==============================
 # KPIs
 # ==============================
-st.header("📊 Indicadores Clave")
+st.header("📊 KPIs")
 
 col1, col2, col3, col4 = st.columns(4)
 
-col1.markdown(f"<div class='kpi'><h3>Pacientes</h3><h2>{len(df_filtered)}</h2></div>", unsafe_allow_html=True)
-col2.markdown(f"<div class='kpi'><h3>Riesgo Promedio</h3><h2>{df_filtered['Outcome'].mean()*100:.1f}%</h2></div>", unsafe_allow_html=True)
-col3.markdown(f"<div class='kpi'><h3>Glucosa Promedio</h3><h2>{df_filtered['Glucose'].mean():.1f}</h2></div>", unsafe_allow_html=True)
-col4.markdown(f"<div class='kpi'><h3>Clusters</h3><h2>{df_filtered['Cluster'].nunique()}</h2></div>", unsafe_allow_html=True)
+col1.metric("Pacientes", len(df_filtered))
+col2.metric("Riesgo Promedio", f"{df_filtered['Outcome'].mean()*100:.1f}%")
+col3.metric("Glucosa Prom", f"{df_filtered['Glucose'].mean():.1f}")
+col4.metric("Clusters", df_filtered["Cluster"].nunique())
 
 # ==============================
 # INSIGHT
 # ==============================
-st.header("🧠 Insight automático")
+st.header("🧠 Insight")
 
-riesgo = df_filtered['Outcome'].mean()
+risk = df_filtered["Outcome"].mean()
 
-if riesgo > 0.6:
-    st.error("⚠️ Alto riesgo general en la población analizada")
-elif riesgo > 0.3:
-    st.warning("⚠️ Riesgo moderado detectado")
+if risk > 0.6:
+    st.error("⚠️ Alto riesgo poblacional")
+elif risk > 0.3:
+    st.warning("⚠️ Riesgo moderado")
 else:
-    st.success("✅ Bajo riesgo general")
+    st.success("✅ Bajo riesgo")
 
 # ==============================
 # TABS
 # ==============================
-tabs = st.tabs(["Datos & EDA", "Distribución", "Correlación",
-                "Modelos", "Random Forest", "Clustering", "Predicción"])
+tabs = st.tabs([
+    "Datos",
+    "Distribución",
+    "Correlación",
+    "Modelos",
+    "Importancia",
+    "Clustering",
+    "Predicción"
+])
 
 # ---------------- TAB 1 ----------------
 with tabs[0]:
     st.dataframe(df_filtered)
-    st.write(df_filtered.describe())
 
 # ---------------- TAB 2 ----------------
 with tabs[1]:
-    fig = px.histogram(df_filtered, x='Outcome', color='Outcome')
+    fig = px.histogram(df_filtered, x="Outcome", color="Outcome")
     st.plotly_chart(fig, use_container_width=True)
 
 # ---------------- TAB 3 ----------------
 with tabs[2]:
-    corr = df_filtered.corr()
-    fig = px.imshow(corr, text_auto=True)
+    fig = px.imshow(df_filtered.corr(), text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
 
 # ---------------- TAB 4 ----------------
 with tabs[3]:
-    results_df = pd.DataFrame(list(results.items()), columns=["Modelo", "Precision"])
-    st.dataframe(results_df)
+    st.write("Modelo cargado desde backend (Random Forest listo)")
 
 # ---------------- TAB 5 ----------------
 with tabs[4]:
-    importances = pd.Series(rf_model.feature_importances_, index=df_orig.drop("Outcome", axis=1).columns)
-    fig = px.bar(importances)
-    st.plotly_chart(fig)
+    importances = pd.Series(
+        rf_model.feature_importances_,
+        index=df_orig.drop("Outcome", axis=1).columns
+    )
+
+    fig = px.bar(importances.sort_values())
+    st.plotly_chart(fig, use_container_width=True)
 
 # ---------------- TAB 6 ----------------
 with tabs[5]:
-    fig = px.scatter(x=X_pca[:,0], y=X_pca[:,1], color=df_orig['Cluster'].astype(str))
-    st.plotly_chart(fig)
+    fig = px.scatter(
+        x=X_pca[:, 0],
+        y=X_pca[:, 1],
+        color=df_orig["Cluster"].astype(str)
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 # ---------------- TAB 7 ----------------
 with tabs[6]:
 
-    preg = st.sidebar.slider("Embarazos", 0, 20, 1)
-    gluc = st.sidebar.slider("Glucosa", 0, 200, 120)
-    bp = st.sidebar.slider("Presión", 0, 140, 70)
-    skin = st.sidebar.slider("Piel", 0, 100, 20)
-    ins = st.sidebar.slider("Insulina", 0, 900, 80)
-    bmi = st.sidebar.slider("BMI", 0.0, 70.0, 25.0)
-    dpf = st.sidebar.slider("DPF", 0.0, 3.0, 0.5)
-    age = st.sidebar.slider("Edad", 10, 100, 40)
+    st.subheader("🧪 Nuevo paciente")
 
-    pred_label, pred_prob = predict_patient(
-        [preg, gluc, bp, skin, ins, bmi, dpf, age],
-        scaler,
-        rf_model
-    )
+    preg = st.slider("Embarazos", 0, 20, 1)
+    gluc = st.slider("Glucosa", 0, 200, 120)
+    bp = st.slider("Presión", 0, 140, 70)
+    skin = st.slider("Piel", 0, 100, 20)
+    ins = st.slider("Insulina", 0, 900, 80)
+    bmi = st.slider("BMI", 0.0, 70.0, 25.0)
+    dpf = st.slider("DPF", 0.0, 3.0, 0.5)
+    age = st.slider("Edad", 10, 100, 40)
 
-    cluster_pred = kmeans.predict(scaler.transform([[preg, gluc, bp, skin, ins, bmi, dpf, age]]))[0]
+    # ==============================
+    # PREDICCIÓN
+    # ==============================
+    X_new = scaler.transform([[preg, gluc, bp, skin, ins, bmi, dpf, age]])
 
-    st.metric("Probabilidad", f"{pred_prob*100:.1f}%")
-    st.metric("Cluster", cluster_pred)
-    st.metric("Riesgo", "Alto" if pred_label else "Bajo")
+    prob = rf_model.predict_proba(X_new)[0][1]
+    pred = int(prob > 0.5)
 
-    # HISTORIAL
-    prediction = {
+    cluster = kmeans.predict(X_new)[0]
+
+    # ==============================
+    # RESULTADOS
+    # ==============================
+    st.metric("Probabilidad", f"{prob*100:.1f}%")
+    st.metric("Cluster", cluster)
+    st.metric("Riesgo", "Alto" if pred else "Bajo")
+
+    if pred:
+        st.error("⚠️ Alto riesgo de diabetes")
+    else:
+        st.success("✅ Bajo riesgo de diabetes")
+
+    # ==============================
+    # HISTORIAL LOCAL (TEMPORAL)
+    # ==============================
+    if "history" not in st.session_state:
+        st.session_state.history = []
+
+    st.session_state.history.append({
         "Edad": age,
-        "IMC": bmi,
         "Glucosa": gluc,
-        "Outcome": "Alto" if pred_label else "Bajo",
-        "Probabilidad": round(pred_prob * 100, 1)
-    }
+        "BMI": bmi,
+        "Probabilidad": round(prob * 100, 1),
+        "Riesgo": "Alto" if pred else "Bajo",
+        "Cluster": cluster
+    })
 
-    pred_id = f"{age}_{bmi}_{gluc}_{pred_label}"
-
-    update_history(st.session_state, prediction, pred_id)
-
-    st.dataframe(st.session_state.historial_predicciones)              
+    st.subheader("📊 Historial de predicciones")
+    st.dataframe(pd.DataFrame(st.session_state.history))
