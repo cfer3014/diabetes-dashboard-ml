@@ -314,252 +314,250 @@ with tabs[6]:
 # PREDICCIÓN ACTUAL (SIEMPRE EXISTE)
 # ==============================
 
-current_prediction = {
-    "Edad": age,
-    "IMC": bmi,
-    "Glucosa": gluc,
-    "Presion": bp,
-    "Outcome Predicho": "Alto riesgo" if pred_label == 1 else "Bajo riesgo",
-    "Probabilidad": round(pred_prob * 100, 1),
-    "Cluster": cluster_pred
-}
+    current_prediction = {
+        "Edad": age,
+        "IMC": bmi,
+        "Glucosa": gluc,
+        "Presion": bp,
+        "Outcome Predicho": "Alto riesgo" if pred_label == 1 else "Bajo riesgo",
+        "Probabilidad": round(pred_prob * 100, 1),
+        "Cluster": cluster_pred
+    }
 
-# ==============================
-# HISTORIAL SEGURO (SIN DUPLICADOS)
-# ==============================
-if "historial_predicciones" not in st.session_state:
-    st.session_state.historial_predicciones = pd.DataFrame(columns=current_prediction.keys())
+    # ==============================
+    # HISTORIAL SEGURO (SIN DUPLICADOS)
+    # ==============================
+    if "historial_predicciones" not in st.session_state:
+        st.session_state.historial_predicciones = pd.DataFrame(columns=current_prediction.keys())
 
-if "last_pred_id" not in st.session_state:
-    st.session_state.last_pred_id = None
+    if "last_pred_id" not in st.session_state:
+        st.session_state.last_pred_id = None
 
-pred_id = f"{age}_{bmi}_{gluc}_{bp}_{pred_label}_{round(pred_prob,2)}"
+    pred_id = f"{age}_{bmi}_{gluc}_{bp}_{pred_label}_{round(pred_prob,2)}"
 
-if st.session_state.last_pred_id != pred_id:
-    st.session_state.historial_predicciones = pd.concat([
-        st.session_state.historial_predicciones,
-        pd.DataFrame([current_prediction])
-    ], ignore_index=True)
+    if st.session_state.last_pred_id != pred_id:
+        st.session_state.historial_predicciones = pd.concat([
+            st.session_state.historial_predicciones,
+            pd.DataFrame([current_prediction])
+        ], ignore_index=True)
 
-    st.session_state.last_pred_id = pred_id
+        st.session_state.last_pred_id = pred_id
 
-# ==============================
-# MOSTRAR HISTORIAL
-# ==============================
-st.header("📊 Historial de predicciones")
-st.dataframe(st.session_state.historial_predicciones)
+    # ==============================
+    # MOSTRAR HISTORIAL
+    # ==============================
+    st.header("📊 Historial de predicciones")
+    st.dataframe(st.session_state.historial_predicciones)
 
-# ==============================
-# GRÁFICO COMPARATIVO
-# ==============================
+
 # ==============================
 # 📈 GRÁFICO CLÍNICO PROFESIONAL
 # ==============================
 
-st.header("📈 Paciente vs Dataset")
+    st.header("📈 Paciente vs Dataset (Vista Clínica)")
 
-# 🎯 Selector
-modo_vista = st.radio(
-    "Modo de visualización",
-    ["Actual", "Histórico"],
-    horizontal=True
-)
-
-# ==============================
-# 📊 DATASET BASE (TENUE)
-# ==============================
-df_base = df_filtered.copy().reset_index(drop=True)
-df_base["Cluster"] = df_base["Cluster"].astype(str)
-
-fig = px.scatter(
-    df_base,
-    x="Glucose",
-    y="BMI",
-    color="Cluster",
-    opacity=0.35,  # 🔥 dataset en fondo
-    color_discrete_sequence=px.colors.qualitative.Set2
-)
-
-# ==============================
-# 🧠 HISTORIAL (SEPARADO)
-# ==============================
-if "historial_grafico" not in st.session_state:
-    st.session_state.historial_grafico = pd.DataFrame(columns=["Glucose","BMI","Age","Cluster"])
-
-if "last_graph_id" not in st.session_state:
-    st.session_state.last_graph_id = None
-
-graph_id = f"{age}_{bmi}_{gluc}_{bp}_{pred_label}"
-
-# guardar sin duplicar
-if st.session_state.last_graph_id != graph_id:
-    new_patient = pd.DataFrame([{
-        "Glucose": gluc,
-        "BMI": bmi,
-        "Age": age,
-        "Cluster": str(cluster_pred)
-    }])
-
-    st.session_state.historial_grafico = pd.concat(
-        [st.session_state.historial_grafico, new_patient],
-        ignore_index=True
+    # 🎯 Selector
+    modo_vista = st.radio(
+        "Modo de visualización",
+        ["Actual", "Histórico"],
+        horizontal=True
     )
 
-    st.session_state.last_graph_id = graph_id
+    # ==============================
+    # 📊 DATASET BASE (TENUE)
+    # ==============================
+    df_base = df_filtered.copy().reset_index(drop=True)
+    df_base["Cluster"] = df_base["Cluster"].astype(str)
 
-# mostrar histórico SOLO si se selecciona
-if modo_vista == "Histórico" and not st.session_state.historial_grafico.empty:
+    fig = px.scatter(
+        df_base,
+        x="Glucose",
+        y="BMI",
+        color="Cluster",
+        opacity=0.35,  # 🔥 dataset en fondo
+        color_discrete_sequence=px.colors.qualitative.Set2
+    )
+
+    # ==============================
+    # 🧠 HISTORIAL (SEPARADO)
+    # ==============================
+    if "historial_grafico" not in st.session_state:
+        st.session_state.historial_grafico = pd.DataFrame(columns=["Glucose","BMI","Age","Cluster"])
+
+    if "last_graph_id" not in st.session_state:
+        st.session_state.last_graph_id = None
+
+    graph_id = f"{age}_{bmi}_{gluc}_{bp}_{pred_label}"
+
+    # guardar sin duplicar
+    if st.session_state.last_graph_id != graph_id:
+        new_patient = pd.DataFrame([{
+            "Glucose": gluc,
+            "BMI": bmi,
+            "Age": age,
+            "Cluster": str(cluster_pred)
+        }])
+
+        st.session_state.historial_grafico = pd.concat(
+            [st.session_state.historial_grafico, new_patient],
+            ignore_index=True
+        )
+
+        st.session_state.last_graph_id = graph_id
+
+    # mostrar histórico SOLO si se selecciona
+    if modo_vista == "Histórico" and not st.session_state.historial_grafico.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=st.session_state.historial_grafico["Glucose"],
+                y=st.session_state.historial_grafico["BMI"],
+                mode="markers",
+                marker=dict(
+                    size=9,
+                    color="yellow",
+                    opacity=0.9
+                ),
+                name="Pacientes ingresados"
+            )
+        )
+
+    # ==============================
+    # ⭐ PACIENTE ACTUAL
+    # ==============================
     fig.add_trace(
         go.Scatter(
-            x=st.session_state.historial_grafico["Glucose"],
-            y=st.session_state.historial_grafico["BMI"],
+            x=[gluc],
+            y=[bmi],
             mode="markers",
             marker=dict(
-                size=9,
-                color="yellow",
-                opacity=0.9
+                size=24,
+                color="red",
+                symbol="star",
+                line=dict(width=2, color="white")
             ),
-            name="Pacientes ingresados"
+            name="Paciente actual"
         )
     )
 
-# ==============================
-# ⭐ PACIENTE ACTUAL
-# ==============================
-fig.add_trace(
-    go.Scatter(
-        x=[gluc],
-        y=[bmi],
-        mode="markers",
-        marker=dict(
-            size=24,
-            color="red",
-            symbol="star",
-            line=dict(width=2, color="white")
+    # ==============================
+    # 🎨 LAYOUT PRO
+    # ==============================
+    fig.update_layout(
+        height=550,
+        template="plotly_dark",
+        title="Distribución clínica de pacientes",
+
+        legend=dict(
+            orientation="h",
+            y=1.02,
+            x=0.5,
+            xanchor="center"
         ),
-        name="Paciente actual"
+
+        margin=dict(l=20, r=20, t=50, b=20),
+
+        xaxis=dict(
+            title="Glucosa (mg/dL)",
+            gridcolor="rgba(255,255,255,0.05)"
+        ),
+
+        yaxis=dict(
+            title="IMC (BMI)",
+            gridcolor="rgba(255,255,255,0.05)"
+        )
     )
-)
 
-# ==============================
-# 🎨 LAYOUT PRO
-# ==============================
-fig.update_layout(
-    height=550,
-    template="plotly_dark",
-    title="Distribución clínica de pacientes",
-
-    legend=dict(
-        orientation="h",
-        y=1.02,
-        x=0.5,
-        xanchor="center"
-    ),
-
-    margin=dict(l=20, r=20, t=50, b=20),
-
-    xaxis=dict(
-        title="Glucosa (mg/dL)",
-        gridcolor="rgba(255,255,255,0.05)"
-    ),
-
-    yaxis=dict(
-        title="IMC (BMI)",
-        gridcolor="rgba(255,255,255,0.05)"
-    )
-)
-
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
 # ==============================
 # EXPORTACIÓN PDF + EXCEL
 # ==============================
-import io
-from fpdf import FPDF
-import tempfile
-import os
+    import io
+    from fpdf import FPDF
+    import tempfile
+    import os
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-# ---------------- PDF ----------------
-with col1:
-    if st.button("📄 Generar PDF"):
+    # ---------------- PDF ----------------
+    with col1:
+        if st.button("📄 Generar PDF"):
 
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "Reporte de Diabetes", ln=True, align="C")
-        pdf.ln(10)
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", "B", 16)
+            pdf.cell(0, 10, "Reporte de Diabetes", ln=True, align="C")
+            pdf.ln(10)
 
-        pdf.set_font("Arial", "", 12)
+            pdf.set_font("Arial", "", 12)
 
-        for k, v in current_prediction.items():
-            pdf.cell(0, 8, f"{k}: {v}", ln=True)
+            for k, v in current_prediction.items():
+                pdf.cell(0, 8, f"{k}: {v}", ln=True)
 
-        pdf.ln(5)
+            pdf.ln(5)
 
-        # gráfico
-        plt.figure(figsize=(6,4))
-        for c in sorted(df_plot["Cluster"].unique()):
-            sub = df_plot[df_plot["Cluster"] == c]
-            plt.scatter(sub["Glucose"], sub["BMI"], label=f"Cluster {c}")
+            # gráfico
+            plt.figure(figsize=(6,4))
+            for c in sorted(df_plot["Cluster"].unique()):
+                sub = df_plot[df_plot["Cluster"] == c]
+                plt.scatter(sub["Glucose"], sub["BMI"], label=f"Cluster {c}")
 
-        plt.xlabel("Glucosa")
-        plt.ylabel("BMI")
-        plt.legend()
+            plt.xlabel("Glucosa")
+            plt.ylabel("BMI")
+            plt.legend()
 
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-            plt.savefig(tmp.name)
-            tmp_path = tmp.name
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                plt.savefig(tmp.name)
+                tmp_path = tmp.name
 
-        plt.close()
+            plt.close()
 
-        pdf.image(tmp_path, x=10, w=180)
-        os.remove(tmp_path)
+            pdf.image(tmp_path, x=10, w=180)
+            os.remove(tmp_path)
 
-        pdf_bytes = pdf.output(dest="S").encode("latin1")
+            pdf_bytes = pdf.output(dest="S").encode("latin1")
 
-        st.download_button(
-            "⬇️ Descargar PDF",
-            data=pdf_bytes,
-            file_name="reporte_diabetes.pdf",
-            mime="application/pdf"
-        )
-
-# ---------------- EXCEL ----------------
-with col2:
-    if st.button("📊 Exportar Excel"):
-
-        output = io.BytesIO()
-
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-
-            # 1. pacientes filtrados
-            df_filtered.to_excel(writer, sheet_name="Pacientes", index=False)
-
-            # 2. paciente actual
-            pd.DataFrame([current_prediction]).to_excel(
-                writer,
-                sheet_name="Nuevo Paciente",
-                index=False
+            st.download_button(
+                "⬇️ Descargar PDF",
+                data=pdf_bytes,
+                file_name="reporte_diabetes.pdf",
+                mime="application/pdf"
             )
 
-            # 3. historial
-            st.session_state.historial_predicciones.to_excel(
-                writer,
-                sheet_name="Historial",
-                index=False
+    # ---------------- EXCEL ----------------
+    with col2:
+        if st.button("📊 Exportar Excel"):
+
+            output = io.BytesIO()
+
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+
+                # 1. pacientes filtrados
+                df_filtered.to_excel(writer, sheet_name="Pacientes", index=False)
+
+                # 2. paciente actual
+                pd.DataFrame([current_prediction]).to_excel(
+                    writer,
+                    sheet_name="Nuevo Paciente",
+                    index=False
+                )
+
+                # 3. historial
+                st.session_state.historial_predicciones.to_excel(
+                    writer,
+                    sheet_name="Historial",
+                    index=False
+                )
+
+                # 4. resumen clusters
+                cluster_summary.to_excel(writer, sheet_name="Clusters")
+
+            output.seek(0)
+
+            st.download_button(
+                "⬇️ Descargar Excel",
+                data=output,
+                file_name="dashboard_diabetes.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
-            # 4. resumen clusters
-            cluster_summary.to_excel(writer, sheet_name="Clusters")
-
-        output.seek(0)
-
-        st.download_button(
-            "⬇️ Descargar Excel",
-            data=output,
-            file_name="dashboard_diabetes.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        
+            
