@@ -14,8 +14,17 @@
 
 
 #PARA RENDER
-import uvicorn
-from backend.main import app
+from fastapi import FastAPI
+from backend.routes import auth_routes, predict_routes, user_routes
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+app = FastAPI(title="Diabetes ML API")
+
+# rutas
+app.include_router(auth_routes.router)
+app.include_router(predict_routes.router)
+app.include_router(user_routes.router)
+
+
+@app.get("/")
+def root():
+    return {"message": "API Diabetes ML funcionando 🚀"}
