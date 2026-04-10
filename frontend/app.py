@@ -987,10 +987,14 @@ with tabs[3]:
 
 # ---------------- TAB 5 ----------------
 with tabs[4]:
+    # importances = pd.Series(
+    #     rf_model.feature_importances_,
+    #     index=df_orig.drop("Outcome", axis=1).columns
+    # )
     importances = pd.Series(
-        rf_model.feature_importances_,
-        index=df_orig.drop("Outcome", axis=1).columns
-    )
+    rf_model.feature_importances_,
+    index=X.columns
+)
 
     fig = px.bar(importances.sort_values())
     st.plotly_chart(fig, use_container_width=True)
